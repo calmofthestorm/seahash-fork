@@ -5,7 +5,8 @@ use std::slice;
 use helper;
 
 /// A SeaHash state.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct State {
     /// `a`
     a: u64,

@@ -5,6 +5,7 @@ use helper;
 
 /// The streaming version of the algorithm.
 #[derive(Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SeaHasher {
     /// The state of the hasher.
     state: (u64, u64, u64, u64),
