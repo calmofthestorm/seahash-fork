@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use std::hash::Hasher;
 use std::slice;
 
@@ -32,6 +33,45 @@ impl SeaHasher {
     /// Create a new `SeaHasher` with default state.
     pub fn new() -> SeaHasher {
         SeaHasher::default()
+    }
+
+    /// Serialize hasher state into the provided buffer.
+    pub fn serialize_state_into(&self, buf: &mut [u8; 56]) {
+        assert_eq!(std::mem::size_of::<u64>(), 8);
+        assert_eq!(std::mem::size_of::<usize>(), 8);
+
+        buf[0..8].copy_from_slice(&mut self.state.0.to_le_bytes());
+        buf[8..16].copy_from_slice(&mut self.state.1.to_le_bytes());
+        buf[16..24].copy_from_slice(&mut self.state.2.to_le_bytes());
+        buf[24..32].copy_from_slice(&mut self.state.3.to_le_bytes());
+        buf[32..40].copy_from_slice(&mut self.written.to_le_bytes());
+        buf[40..48].copy_from_slice(&mut self.tail.to_le_bytes());
+        buf[48..56].copy_from_slice(&mut (self.ntail as u64).to_le_bytes());
+    }
+
+    /// Return serialized hasher state.
+    pub fn serialized_state(&self) -> [u8; 56] {
+        let mut buf = [0; 56];
+        self.serialize_state_into(&mut buf);
+        buf
+    }
+
+    /// Construct a hasher from a buffer..
+    pub fn from_serialized_state(buf: &[u8; 56]) -> SeaHasher {
+        assert_eq!(std::mem::size_of::<u64>(), 8);
+        assert_eq!(std::mem::size_of::<usize>(), 8);
+
+        let mut sea = SeaHasher::default();
+
+        sea.state.0 = u64::from_le_bytes(buf[0..8].try_into().unwrap());
+        sea.state.1 = u64::from_le_bytes(buf[8..16].try_into().unwrap());
+        sea.state.2 = u64::from_le_bytes(buf[16..24].try_into().unwrap());
+        sea.state.3 = u64::from_le_bytes(buf[24..32].try_into().unwrap());
+        sea.written = u64::from_le_bytes(buf[32..40].try_into().unwrap());
+        sea.tail = u64::from_le_bytes(buf[40..48].try_into().unwrap());
+        sea.ntail = u64::from_le_bytes(buf[48..56].try_into().unwrap()) as usize;
+
+        sea
     }
 
     /// Construct a new `SeaHasher` given some seed.
